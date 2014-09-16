@@ -1,6 +1,7 @@
 require 'helper'
 
 describe MACToken do
+  let(:kid) { 'this-token' }
   let(:token) { 'monkey' }
   let(:client) do
     Client.new('abc', 'def', :site => 'https://api.example.com') do |builder|
@@ -13,7 +14,7 @@ describe MACToken do
     end
   end
 
-  subject { MACToken.new(client, token, 'abc123') }
+  subject { MACToken.new(client, token, 'abc123', kid: kid) }
 
   describe '#initialize' do
     it 'assigns client and token' do
@@ -46,8 +47,8 @@ describe MACToken do
 
   describe '#request' do
     VERBS.each do |verb|
-      it "sends the token in the Authorization header for a #{verb.to_s.upcase} request" do
-        expect(subject.post('/token/header').body).to include("MAC id=\"#{token}\"")
+      it "sends the kid in the Authorization header for a #{verb.to_s.upcase} request" do
+        expect(subject.post('/token/header').body).to include("MAC kid=\"#{kid}\"")
       end
     end
   end
@@ -62,7 +63,7 @@ describe MACToken do
 
     it 'generates the proper format' do
       header = subject.header('get', 'https://www.example.com/hello?a=1')
-      expect(header).to match(/MAC id="#{token}", ts="[0-9]+", nonce="[^"]+", mac="[^"]+"/)
+      expect(header).to match(/MAC kid="#{kid}", ts="[0-9]+", seq-nr="[0-9]+", mac="[^"]+"/)
     end
 
     it 'passes ArgumentError with an invalid url' do
@@ -70,14 +71,14 @@ describe MACToken do
     end
 
     it 'passes URI::InvalidURIError through' do
-      expect { subject.header('get', nil) }.to raise_error(URI::InvalidURIError)
+      expect { subject.header('get', '\\') }.to raise_error(URI::InvalidURIError)
     end
   end
 
   describe '#signature' do
     it 'generates properly' do
-      signature = subject.signature(0, 'random-string', 'get', URI('https://www.google.com'))
-      expect(signature).to eq('rMDjVA3VJj3v1OmxM29QQljKia6msl5rjN83x3bZmi8=')
+      signature = subject.signature(0, 'random-string', 'get', URI('https://www.google.com/hai?this=1'))
+      expect(signature).to eq('13wqHvYkM7uDKpT9Yc8HnDLxa+4yjv2G1qV1kkqpbdc=')
     end
   end
 
