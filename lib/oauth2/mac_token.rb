@@ -90,6 +90,20 @@ module OAuth2
       strict_encode64(OpenSSL::HMAC.digest(@algorithm, secret, signature))
     end
 
+    # Verify a signed header
+    #
+    # @param [String] header_string the received Authorization header
+    def verify(verb, uri, header_string)
+      kid = header_string.scan(/kid=\"?([^\"]+)/).flatten.first
+      ts = header_string.scan(/ts=\"?([0-9]+)/).flatten.first
+      seq_nr = header_string.scan(/seq-nr=\"?([0-9]+)/).flatten.first
+      mac = header_string.scan(/mac=\"?([^\"]+)/).flatten.first
+
+      if signature(ts, seq_nr, verb, URI(uri)) == mac
+        { kid: kid, ts: Time.at(ts.to_f / 1000), seq_nr: seq_nr.to_i }
+      end
+    end
+
     # Set the HMAC algorithm
     #
     # @param [String] alg the algorithm to use (one of 'hmac-sha-1', 'hmac-sha-256')

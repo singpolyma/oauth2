@@ -82,6 +82,18 @@ describe MACToken do
     end
   end
 
+  describe '#verify' do
+    it 'verifies generated signatures' do
+      header = subject.header('get', URI('https://www.google.com/hai?this=1'))
+      expect(subject.verify('get', 'https://www.google.com/hai?this=1', header)).to_not be_nil
+    end
+
+    it 'fails for bad signatures' do
+      header = subject.header('get', URI('https://www.google.com/hai?this=1'))
+      expect(subject.verify('get', 'https://www.google.com/hai?this=2', header)).to be_nil
+    end
+  end
+
   describe '#headers' do
     it 'is an empty hash' do
       expect(subject.headers).to eq({})
